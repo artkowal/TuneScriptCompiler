@@ -1,0 +1,49 @@
+tempo = 120
+ticks = 480
+time = 3/4
+
+track "WlazKotek" {
+    instrument = piano
+
+    // Takt 1
+    play g4 for 1 beat
+    play e4 for 1 beat
+    play e4 for 1 beat
+
+    // Takt 2
+    play f4 for 1 beat
+    play d4 for 1 beat
+    play d4 for 1 beat
+
+    // Takt 3
+    play c4 for 0.5 beat
+    play e4 for 0.5 beat
+    play g4 for 2 beat
+
+    // Takt 4
+    play g4 for 1 beat
+    play e4 for 1 beat
+    play e4 for 1 beat
+
+    // Takt 5
+    play f4 for 1 beat
+    play d4 for 1 beat
+    play d4 for 1 beat
+
+    // Takt 6
+    play c4 for 0.5 beat
+    play e4 for 0.5 beat
+    play c4 for 2 beat
+}
+
+track "Akompaniament" {
+    instrument = strings
+
+    play <g3 c4 e4> for 3 beats
+    play <g3 b3 d4> for 3 beats
+    play <g3 c4 e4> for 3 beats
+    play <g3 c4 e4> for 3 beats
+    play <g3 b3 d4> for 3 beats
+    play <g3 c4 e4> for 3 beats
+}
+
