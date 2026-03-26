@@ -1,0 +1,760 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>TuneScript Studio</title>
+
+    <script src="https://cdn.jsdelivr.net/pyodide/v0.25.0/full/pyodide.js"></script>
+
+    <script src="https://cdn.jsdelivr.net/combine/npm/tone@14.7.58,npm/@magenta/music@1.23.1/es6/core.js,npm/focus-visible@5,npm/html-midi-player@1.5.0"></script>
+
+    <style>
+        :root {
+            --bg-body: #0f172a;
+            --bg-panel: #1e293b;
+            --bg-input: #0f172a;
+            --fg-main: #e2e8f0;
+            --fg-muted: #94a3b8;
+            --color-primary: #8b5cf6;
+            --color-primary-hover: #a78bfa;
+            --color-success: #10b981;
+            --color-success-hover: #059669;
+            --log-success: #4ade80;
+            --log-error: #f87171;
+            --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.3), 0 2px 4px -1px rgba(0, 0, 0, 0.2);
+            --border-radius: 12px;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
+            background-color: var(--bg-body);
+            color: var(--fg-main);
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            letter-spacing: -0.01em;
+        }
+
+        header {
+            background-color: var(--bg-panel);
+            padding: 15px 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: var(--shadow-md);
+            z-index: 5;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+        }
+
+        .brand {
+            font-size: 22px;
+            font-weight: 800;
+            color: white;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .brand::after {
+            content: '';
+            display: inline-block;
+            width: 8px; height: 8px;
+            background-color: var(--color-primary);
+            border-radius: 50%;
+        }
+
+        .btn-group { display: flex; gap: 10px; }
+
+        button {
+            border: none;
+            padding: 10px 20px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            border-radius: 8px;
+            transition: all 0.2s ease;
+            display: flex; outline: none; gap: 8px; align-items: center;
+        }
+
+        button.primary {
+            background-color: var(--color-primary);
+            color: white;
+            box-shadow: 0 2px 4px rgba(139, 92, 246, 0.3);
+        }
+        button.primary:hover {
+            background-color: var(--color-primary-hover);
+            transform: translateY(-1px);
+        }
+        button.primary:disabled {
+            background-color: #475569;
+            color: #94a3b8;
+            cursor: not-allowed;
+            transform: none; box-shadow: none;
+        }
+
+        button.secondary {
+            background-color: transparent;
+            color: var(--fg-muted);
+            border: 1px solid rgba(148, 163, 184, 0.3);
+        }
+        button.secondary:hover {
+            background-color: rgba(148, 163, 184, 0.1);
+            color: var(--fg-main);
+            border-color: rgba(148, 163, 184, 0.5);
+        }
+
+        button.success {
+            background-color: var(--color-success);
+            color: white;
+        }
+        button.success:hover {
+            background-color: var(--color-success-hover);
+            transform: translateY(-1px);
+        }
+
+        button.danger {
+            background-color: transparent;
+            color: var(--log-error);
+            border: 1px solid rgba(248, 113, 113, 0.3);
+            padding: 6px 12px;
+            font-size: 12px;
+        }
+        button.danger:hover {
+            background-color: rgba(248, 113, 113, 0.1);
+            border-color: rgba(248, 113, 113, 0.8);
+        }
+
+        .app-container {
+            display: grid;
+            flex: 1;
+            padding: 25px;
+            gap: 25px;
+            grid-template-columns: 2fr 1fr;
+            overflow: hidden;
+        }
+
+        .panel {
+            background-color: var(--bg-panel);
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow-md);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            border: 1px solid rgba(255,255,255,0.03);
+        }
+
+        .panel-header {
+            padding: 10px 20px;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+            display: flex; justify-content: space-between; align-items: center;
+        }
+
+        .panel-title {
+            font-size: 12px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            color: var(--fg-muted);
+        }
+
+        .editor-controls {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        select.custom-select {
+            background-color: var(--bg-input);
+            color: var(--fg-main);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 6px;
+            padding: 6px 12px;
+            font-size: 13px;
+            outline: none;
+            cursor: pointer;
+            font-family: 'Inter', sans-serif;
+        }
+        select.custom-select:hover { border-color: var(--color-primary); }
+
+        textarea {
+            width: 100%;
+            flex: 1;
+            background-color: var(--bg-input);
+            color: var(--fg-main);
+            font-family: 'Fira Code', 'Consolas', monospace;
+            font-size: 14px;
+            line-height: 1.6;
+            border: none;
+            padding: 20px;
+            resize: none;
+            outline: none;
+        }
+
+        textarea#logArea {
+            color: var(--fg-muted);
+            font-size: 13px;
+        }
+
+        #playerSection {
+            padding: 15px;
+            border-top: 1px solid rgba(255,255,255,0.05);
+            background-color: rgba(0,0,0,0.1);
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+        midi-player {
+            display: block; width: 100%;
+            --midi-player-text-color: #0f172a;
+            --midi-player-progress-color: var(--color-primary);
+        }
+
+        midi-player::part(time) {
+            color: #94a3b8;
+            font-family: 'Inter', sans-serif;
+            font-size: 13px;
+        }
+
+        .modal {
+            display: none; position: fixed; z-index: 100;
+            left: 0; top: 0; width: 100%; height: 100%;
+            background-color: rgba(15, 23, 42, 0.9);
+            backdrop-filter: blur(4px);
+            opacity: 0; transition: opacity 0.3s ease;
+        }
+        .modal.open { display: block; opacity: 1; }
+
+        .modal-content {
+            background-color: var(--bg-panel);
+            margin: 8vh auto;
+            padding: 0;
+            border-radius: var(--border-radius);
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+            width: 90%; max-width: 700px;
+            height: 70vh;
+            display: flex; flex-direction: column; overflow: hidden;
+            border: 1px solid rgba(255,255,255,0.05);
+            transform: scale(0.9); transition: transform 0.3s ease;
+        }
+        .modal.open .modal-content { transform: scale(1); }
+
+        .modal-header {
+            padding: 20px 25px;
+            background-color: rgba(0,0,0,0.1);
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+            display: flex; justify-content: space-between; align-items: center;
+        }
+
+        .close-modal {
+            background: transparent; border: none; color: var(--fg-muted);
+            font-size: 24px; cursor: pointer; padding: 0; line-height: 1;
+        }
+        .close-modal:hover { color: var(--log-error); }
+
+        @media (max-width: 900px) {
+            .app-container {
+                grid-template-columns: 1fr;
+                padding: 15px; gap: 15px;
+            }
+            header { padding: 10px 15px; }
+            .brand { font-size: 18px; }
+            .modal-content { height: 80vh; margin: 10vh auto; }
+            .editor-controls { flex-direction: column; align-items: stretch; }
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <div style="display: flex; flex-direction: column; gap: 1px;">
+            <div class="brand">TuneScript Studio</div>
+            <span style="font-size: 10px; color: rgba(148, 163, 184, 0.45); letter-spacing: 0.5px; font-weight: 400; user-select: none;">
+                v1.3 | &copy; 2025 A.K. & J.W. | AT
+            </span>
+        </div>
+        <div class="btn-group">
+            <button id="helpBtn" class="secondary">Instrukcja</button>
+            <button id="compileBtn" class="primary" disabled>
+                <span id="btnText">Ładowanie...</span>
+            </button>
+        </div>
+    </header>
+
+    <div class="app-container">
+
+        <div class="panel">
+            <div class="panel-header">
+                <div class="panel-title">Edytor Kodu</div>
+                <div class="editor-controls">
+                    <select id="exampleSelector" class="custom-select">
+                        <option value="imperial">Marsz Imperialny (Star Wars)</option>
+                        <option value="tetris">Motyw z Tetrisa</option>
+                        <option value="mario">Super Mario Bros</option>
+                        <option value="empty">Moja ścieżka</option>
+                    </select>
+                    <button id="clearBtn" class="danger">Nowa ścieżka</button>
+                </div>
+            </div>
+            <textarea id="codeEditor" spellcheck="false"></textarea>
+        </div>
+
+        <div class="panel">
+            <div class="panel-header">
+                <div class="panel-title">Konsola</div>
+            </div>
+            <textarea id="logArea" readonly></textarea>
+
+            <div id="playerSection" style="display: none;">
+                <midi-player id="midiPlayer" sound-font visualizer="#myVisualizer"></midi-player>
+                <button id="downloadBtn" class="success" style="width: 100%; justify-content: center;">
+                    <span>⬇ Pobierz plik MIDI</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div id="helpModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div class="brand">TuneScript</div>
+                <button class="close-modal" id="closeModal">&times;</button>
+            </div>
+            <div style="flex:1; display:flex; flex-direction:column; padding: 10px;">
+                 <div class="panel-title" style="padding: 10px 15px 5px 15px;">Podstawy składni</div>
+                 <textarea readonly style="background-color: rgba(0,0,0,0.15); border-radius: 8px; font-size: 13px;">
+1. USTAWIENIA GLOBALNE (na początku pliku):
+   tempo = 120         // Szybkość w BPM
+   ticks = 480         // Rozdzielczość MIDI (zazwyczaj 480)
+   time = 4/4          // Metrum (np. 3/4, 4/4, 6/8)
+
+2. DEFINICJA ŚCIEŻKI:
+   track "Nazwa" {
+       instrument = piano  // Wybór instrumentu
+       ... komendy ...
+   }
+
+3. KOMENDY MUZYCZNE:
+   a) Pojedyncza nuta:
+      play c4 for 1 beat  (ćwierć nuta)
+      play c#4 for 0.5 beats  (ósemka)
+      play db4 for 2 beats    (cała nuta)
+
+      Składnia nuty: [nazwa][znak][oktawa]
+      - Nazwy: c, d, e, f, g, a, b
+      - Znaki: sharp (#), flat (b) (opcjonalne)
+      - Oktawa: -1 do 9
+
+   b) Akord (w nawiasach trójkątnych "<>"):
+      play <c4 e4 g4> for 1 beat
+
+   c) Pauza:
+      rest for 1 beat
+
+4. DOSTĘPNE INSTRUMENTY (General MIDI subset):
+   piano, bright_piano, electric_piano, honky_tonk,
+   guitar, acoustic_guitar, electric_guitar, bass,
+   violin, strings, trumpet, sax, flute, drums
+
+5. KOMENTARZE:
+   // To jest komentarz jedno-linijkowy
+                </textarea>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const editor = document.getElementById('codeEditor');
+        const logArea = document.getElementById('logArea');
+        const compileBtn = document.getElementById('compileBtn');
+        const btnText = document.getElementById('btnText');
+        const playerSection = document.getElementById('playerSection');
+        const midiPlayer = document.getElementById('midiPlayer');
+        const downloadBtn = document.getElementById('downloadBtn');
+        const exampleSelector = document.getElementById('exampleSelector');
+        const clearBtn = document.getElementById('clearBtn');
+
+        logArea.value = "";
+
+        let pyodideInstance = null;
+        let currentMidiUrl = null;
+
+const tuneExamples = {
+            imperial: `// Marsz Imperialny - Star Wars Theme
+
+tempo = 105
+ticks = 480
+time = 4/4
+
+track "Melodia" {
+    instrument = trumpet
+
+    // Takt 1
+    play g4 for 1 beat
+    play g4 for 1 beat
+    play g4 for 1 beat
+    play e flat 4 for 0.75 beats
+    play b flat 4 for 0.25 beats
+
+    // Takt 2
+    play g4 for 1 beat
+    play e flat 4 for 0.75 beats
+    play b flat 4 for 0.25 beats
+    play g4 for 2 beats
+
+    // Takt 3
+    play d5 for 1 beat
+    play d5 for 1 beat
+    play d5 for 1 beat
+    play e flat 5 for 0.75 beats
+    play b flat 4 for 0.25 beats
+
+    // Takt 4
+    play f sharp 4 for 1 beat
+    play e flat 4 for 0.75 beats
+    play b flat 4 for 0.25 beats
+    play g4 for 2 beats
+}
+
+track "Smyczki" {
+    instrument = strings
+
+    // Takt 1
+    play <g3 b flat 3 d4> for 1 beat
+    play <g3 b flat 3 d4> for 1 beat
+    play <g3 b flat 3 d4> for 1 beat
+    play <e flat 3 g3 b flat 3> for 0.75 beats
+    play <e flat 3 g3 b flat 3> for 0.25 beats
+
+    // Takt 2
+    play <g3 b flat 3 d4> for 1 beat
+    play <e flat 3 g3 b flat 3> for 0.75 beats
+    play <e flat 3 g3 b flat 3> for 0.25 beats
+    play <g3 b flat 3 d4> for 2 beats
+
+    // Takt 3
+    play <d4 f sharp 4 a4> for 1 beat
+    play <d4 f sharp 4 a4> for 1 beat
+    play <d4 f sharp 4 a4> for 1 beat
+    play <e flat 4 g4 b flat 4> for 0.75 beats
+    play <e flat 4 g4 b flat 4> for 0.25 beats
+
+    // Takt 4
+    play <d4 f sharp 4 a4> for 1 beat
+    play <e flat 3 g3 b flat 3> for 0.75 beats
+    play <e flat 3 g3 b flat 3> for 0.25 beats
+    play <g3 b flat 3 d4> for 2 beats
+}`,
+            tetris: `// Motyw Tetris
+
+tempo = 140
+ticks = 480
+time = 4/4
+
+track "Melodia" {
+    instrument = flute
+
+    play e5 for 1 beat
+    play b4 for 0.5 beats
+    play c5 for 0.5 beats
+    play d5 for 1 beat
+    play c5 for 0.5 beats
+    play b4 for 0.5 beats
+
+    play a4 for 1 beat
+    play a4 for 0.5 beats
+    play c5 for 0.5 beats
+    play e5 for 1 beat
+    play d5 for 0.5 beats
+    play c5 for 0.5 beats
+
+    play b4 for 1.5 beats
+    play c5 for 0.5 beats
+    play d5 for 1 beat
+    play e5 for 1 beat
+
+    play c5 for 1 beat
+    play a4 for 1 beat
+    play a4 for 2 beats
+}
+
+track "Bas" {
+    instrument = bass
+
+    play e3 for 1 beat
+    play e2 for 1 beat
+    play e3 for 1 beat
+    play e2 for 1 beat
+
+    play a3 for 1 beat
+    play a2 for 1 beat
+    play a3 for 1 beat
+    play a2 for 1 beat
+
+    play e3 for 1 beat
+    play e2 for 1 beat
+    play e3 for 1 beat
+    play e2 for 1 beat
+
+    play a3 for 1 beat
+    play a2 for 1 beat
+    play a3 for 1 beat
+    play a2 for 1 beat
+}`,
+            mario: `// Super Mario Bros
+
+tempo = 180
+ticks = 480
+time = 4/4
+
+track "Melodia" {
+    instrument = electric_piano
+
+    play e5 for 0.5 beats
+    play e5 for 0.5 beats
+    rest for 0.5 beats
+    play e5 for 0.5 beats
+    rest for 0.5 beats
+    play c5 for 0.5 beats
+    play e5 for 1 beat
+
+    play g5 for 1 beat
+    rest for 1 beat
+    play g4 for 1 beat
+    rest for 1 beat
+
+    // Główny motyw
+    play c5 for 1.5 beats
+    play g4 for 1.5 beats
+    play e4 for 1 beat
+
+    play a4 for 1 beat
+    play b4 for 1 beat
+    play b flat 4 for 0.5 beats
+    play a4 for 0.5 beats
+    play g4 for 1 beat
+}
+
+track "Bas" {
+    instrument = bass
+
+    play d3 for 0.5 beats
+    play d3 for 0.5 beats
+    rest for 0.5 beats
+    play d3 for 0.5 beats
+    rest for 0.5 beats
+    play d3 for 0.5 beats
+    play d3 for 1 beat
+
+    play g3 for 1 beat
+    rest for 1 beat
+    play g2 for 1 beat
+    rest for 1 beat
+
+    // Bas motyw
+    play e3 for 1.5 beats
+    play c3 for 1.5 beats
+    play c3 for 1 beat
+
+    play f3 for 1 beat
+    play g3 for 1 beat
+    play g flat 3 for 0.5 beats
+    play f3 for 0.5 beats
+    play e3 for 1 beat
+}`,
+            empty: `// Pusty projekt - Stwórz swój własny utwór!
+tempo = 120
+ticks = 480
+time = 4/4
+
+track "MojaSciezka" {
+    instrument = piano
+
+    // Wpisz swoje nuty tutaj:
+    play c4 for 1 beat
+
+}`
+        };
+
+        let userCustomTrack = sessionStorage.getItem('savedCustomTrack') || tuneExamples['empty'];
+
+        if (sessionStorage.getItem('startEmpty') === 'true') {
+            sessionStorage.removeItem('startEmpty');
+            exampleSelector.value = "empty";
+            userCustomTrack = tuneExamples['empty'];
+            sessionStorage.setItem('savedCustomTrack', userCustomTrack);
+            editor.value = tuneExamples['empty'];
+        } else {
+            exampleSelector.value = 'imperial';
+            editor.value = tuneExamples['imperial'];
+        }
+
+        exampleSelector.addEventListener('change', (e) => {
+            if (e.target.value === 'empty') {
+                editor.value = userCustomTrack;
+            } else {
+                editor.value = tuneExamples[e.target.value];
+            }
+            log("Załadowano przykład: " + e.target.options[e.target.selectedIndex].text, "info");
+        });
+
+        editor.addEventListener('input', () => {
+            if (exampleSelector.value === 'empty') {
+                userCustomTrack = editor.value;
+                sessionStorage.setItem('savedCustomTrack', userCustomTrack);
+            }
+        });
+
+        clearBtn.addEventListener('click', () => {
+            sessionStorage.setItem('startEmpty', 'true');
+            window.location.reload();
+        });
+
+        function log(message, type="info") {
+            const prefix = type === "error" ? "✕ " : (type === "success" ? "✓ " : "→ ");
+            logArea.value += prefix + message + "\n";
+            logArea.scrollTop = logArea.scrollHeight;
+        }
+
+        async function initPyodide() {
+            log("Inicjalizacja silnika Python (WebAssembly)...");
+            pyodideInstance = await loadPyodide();
+
+            log("Instalowanie bibliotek MIDI i ANTLR...");
+            await pyodideInstance.loadPackage("micropip");
+            const micropip = pyodideInstance.pyimport("micropip");
+            await micropip.install(['mido==1.3.2', 'antlr4-python3-runtime==4.13.2']);
+
+            log("Wczytywanie modułów TuneScript...");
+            const filesToLoad = [
+                "src/ast_builder.py", "src/ast_nodes.py", "src/ir_generator.py", "src/midi_generator.py", "src/semantic_analyzer.py",
+                "generated/grammar/TuneScriptLexer.py", "generated/grammar/TuneScriptParser.py", "generated/grammar/TuneScriptVisitor.py"
+            ];
+
+            pyodideInstance.FS.mkdir("src");
+            pyodideInstance.FS.mkdir("generated");
+            pyodideInstance.FS.mkdir("generated/grammar");
+            pyodideInstance.FS.mkdir("output");
+
+            for (const file of filesToLoad) {
+                const response = await fetch(file);
+                if (response.ok) {
+                    const text = await response.text();
+                    pyodideInstance.FS.writeFile(file, text);
+                } else {
+                    log(`Błąd ładowania: ${file}`, "error");
+                }
+            }
+
+            const pythonSetupCode = `
+import sys
+import os
+sys.path.append('.')
+sys.path.append('./generated')
+from antlr4 import *
+from generated.grammar.TuneScriptLexer import TuneScriptLexer
+from generated.grammar.TuneScriptParser import TuneScriptParser
+from src.ast_builder import AstBuilder
+from src.semantic_analyzer import SemanticAnalyzer
+from src.ir_generator import IrGenerator
+from src.midi_generator import MidiGenerator
+
+def compile_code(code_string):
+    input_stream = InputStream(code_string)
+    lexer = TuneScriptLexer(input_stream)
+    stream = CommonTokenStream(lexer)
+    parser = TuneScriptParser(stream)
+    parser.removeErrorListeners()
+    tree = parser.tune()
+
+    if parser.getNumberOfSyntaxErrors() > 0:
+        return {"status": "error", "msg": f"Błąd składni! Znaleziono {parser.getNumberOfSyntaxErrors()} błędów."}
+
+    ast = AstBuilder().visit(tree)
+
+    try:
+        context = SemanticAnalyzer().analyze(ast)
+    except Exception as e:
+        msg = str(e).replace("Błędy walidacji:\\n", "").strip()
+        return {"status": "error", "msg": f"Błąd semantyczny: {msg}"}
+
+    ir_data = IrGenerator(context).generate(ast)
+    midi_file = MidiGenerator(context).generate(ir_data)
+
+    output_path = "output/temp_output.mid"
+    midi_file.save(output_path)
+
+    return {"status": "success", "msg": "Kompilacja zakończona sukcesem.", "path": output_path}
+            `;
+            await pyodideInstance.runPythonAsync(pythonSetupCode);
+
+            log("Studio gotowe.", "success");
+            btnText.innerText = "▶ KOMPILUJ";
+            compileBtn.disabled = false;
+        }
+
+        compileBtn.addEventListener('click', async () => {
+            logArea.value = "";
+            playerSection.style.display = "none";
+            const code = editor.value.trim();
+            if (!code) { log("Edytor jest pusty.", "error"); return; }
+
+            log("Uruchamianie kompilatora...");
+            compileBtn.disabled = true;
+            btnText.innerText = "Przetwarzanie...";
+
+            try {
+                pyodideInstance.globals.set("user_code", code);
+                const result = await pyodideInstance.runPythonAsync(`compile_code(user_code)`);
+                const status = result.get('status');
+                const msg = result.get('msg');
+
+                if (status === 'error') {
+                    log(msg, "error");
+                } else {
+                    log(msg, "success");
+                    const path = result.get('path');
+                    const midiBytes = pyodideInstance.FS.readFile(path);
+                    const blob = new Blob([midiBytes], { type: "audio/midi" });
+
+                    if (currentMidiUrl) { URL.revokeObjectURL(currentMidiUrl); }
+
+                    currentMidiUrl = URL.createObjectURL(blob);
+                    midiPlayer.src = currentMidiUrl;
+                    playerSection.style.display = "flex";
+                    log("Plik MIDI załadowany do odtwarzacza.", "info");
+                }
+            } catch (err) {
+                log("Błąd krytyczny kompilatora Python: " + err.message, "error");
+            }
+            compileBtn.disabled = false;
+            btnText.innerText = "▶ KOMPILUJ";
+        });
+
+        downloadBtn.addEventListener('click', () => {
+            if (!currentMidiUrl) return;
+            const a = document.createElement('a');
+            a.href = currentMidiUrl;
+            a.download = "TuneScript_Output.mid";
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            log("Rozpoczęto pobieranie pliku.", "success");
+        });
+
+        const modal = document.getElementById("helpModal");
+        const openBtn = document.getElementById("helpBtn");
+        const closeBtn = document.getElementById("closeModal");
+
+        openBtn.onclick = () => { modal.classList.add('open'); }
+        closeBtn.onclick = () => { modal.classList.remove('open'); }
+        window.onclick = (event) => { if (event.target == modal) modal.classList.remove('open'); }
+
+        initPyodide();
+    </script>
+</body>
+</html>
