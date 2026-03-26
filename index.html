@@ -327,7 +327,41 @@
             <div style="flex:1; display:flex; flex-direction:column; padding: 10px;">
                  <div class="panel-title" style="padding: 10px 15px 5px 15px;">Podstawy składni</div>
                  <textarea readonly style="background-color: rgba(0,0,0,0.15); border-radius: 8px; font-size: 13px;">
-Instrukcja
+1. USTAWIENIA GLOBALNE (na początku pliku):
+   tempo = 120         // Szybkość w BPM
+   ticks = 480         // Rozdzielczość MIDI (zazwyczaj 480)
+   time = 4/4          // Metrum (np. 3/4, 4/4, 6/8)
+
+2. DEFINICJA ŚCIEŻKI:
+   track "Nazwa" {
+       instrument = piano  // Wybór instrumentu
+       ... komendy ...
+   }
+
+3. KOMENDY MUZYCZNE:
+   a) Pojedyncza nuta:
+      play c4 for 1 beat  (ćwierć nuta)
+      play c#4 for 0.5 beats  (ósemka)
+      play db4 for 2 beats    (cała nuta)
+
+      Składnia nuty: [nazwa][znak][oktawa]
+      - Nazwy: c, d, e, f, g, a, b
+      - Znaki: sharp (#), flat (b) (opcjonalne)
+      - Oktawa: -1 do 9
+
+   b) Akord (w nawiasach trójkątnych "<>"):
+      play <c4 e4 g4> for 1 beat
+
+   c) Pauza:
+      rest for 1 beat
+
+4. DOSTĘPNE INSTRUMENTY (General MIDI subset):
+   piano, bright_piano, electric_piano, honky_tonk,
+   guitar, acoustic_guitar, electric_guitar, bass,
+   violin, strings, trumpet, sax, flute, drums
+
+5. KOMENTARZE:
+   // To jest komentarz jedno-linijkowy
                 </textarea>
             </div>
         </div>
