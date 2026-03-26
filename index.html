@@ -19,6 +19,8 @@
             --fg-muted: #94a3b8;
             --color-primary: #8b5cf6;
             --color-primary-hover: #a78bfa;
+            --color-success: #10b981;
+            --color-success-hover: #059669;
             --log-success: #4ade80;
             --log-error: #f87171;
             --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.3), 0 2px 4px -1px rgba(0, 0, 0, 0.2);
@@ -106,6 +108,15 @@
             border-color: rgba(148, 163, 184, 0.5);
         }
 
+        button.success {
+            background-color: var(--color-success);
+            color: white;
+        }
+        button.success:hover {
+            background-color: var(--color-success-hover);
+            transform: translateY(-1px);
+        }
+
         .app-container {
             display: grid;
             flex: 1;
@@ -162,6 +173,9 @@
             padding: 15px;
             border-top: 1px solid rgba(255,255,255,0.05);
             background-color: rgba(0,0,0,0.1);
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
         }
         midi-player {
             display: block; width: 100%;
@@ -261,6 +275,9 @@ track "BassLine" {
 
             <div id="playerSection" style="display: none;">
                 <midi-player id="midiPlayer" sound-font visualizer="#myVisualizer"></midi-player>
+                <button id="downloadBtn" class="success" style="width: 100%; justify-content: center;">
+                    <span>⬇ Pobierz plik MIDI</span>
+                </button>
             </div>
         </div>
     </div>
@@ -287,8 +304,10 @@ Instrukcja
         const btnText = document.getElementById('btnText');
         const playerSection = document.getElementById('playerSection');
         const midiPlayer = document.getElementById('midiPlayer');
+        const downloadBtn = document.getElementById('downloadBtn');
 
         let pyodideInstance = null;
+        let currentMidiUrl = null;
 
         function log(message, type="info") {
             const prefix = type === "error" ? "✕ " : (type === "success" ? "✓ " : "→ ");
@@ -397,9 +416,10 @@ def compile_code(code_string):
                     const path = result.get('path');
                     const midiBytes = pyodideInstance.FS.readFile(path);
                     const blob = new Blob([midiBytes], { type: "audio/midi" });
-                    const url = URL.createObjectURL(blob);
-                    midiPlayer.src = url;
-                    playerSection.style.display = "block";
+                    if (currentMidiUrl) { URL.revokeObjectURL(currentMidiUrl); }
+                    currentMidiUrl = URL.createObjectURL(blob);
+                    midiPlayer.src = currentMidiUrl;
+                    playerSection.style.display = "flex";
                     log("Plik MIDI załadowany do odtwarzacza.", "info");
                 }
             } catch (err) {
@@ -407,6 +427,17 @@ def compile_code(code_string):
             }
             compileBtn.disabled = false;
             btnText.innerText = "▶ KOMPILUJ";
+        });
+
+        downloadBtn.addEventListener('click', () => {
+            if (!currentMidiUrl) return;
+            const a = document.createElement('a');
+            a.href = currentMidiUrl;
+            a.download = "TuneScript_Output.mid";
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            log("Rozpoczęto pobieranie pliku.", "success");
         });
 
         const modal = document.getElementById("helpModal");
