@@ -1,8 +1,15 @@
 # TuneScript Compiler - Command Line Interface (CLI)
 
+[![Python](https://img.shields.io/badge/Python-3.8%2B-3776AB.svg?style=for-the-badge&logo=python&logoColor=white)](https://www.python.org/)
+[![ANTLR4](https://img.shields.io/badge/ANTLR-4-E23B2A.svg?style=for-the-badge)](https://www.antlr.org/)
+
 This branch (`base-compiler-CLI`) contains the core command-line implementation of the TuneScript compiler. It is intentionally devoid of a Graphical User Interface (GUI) to focus strictly on the underlying compiler architecture, lexical analysis, and the code transformation pipeline. 
 
-This project was developed as part of a Bachelor of Science (B.Sc.) degree in Computer Science, specializing in Software Engineering.
+📖 Full Documentation & Grammar: For a comprehensive overview of the language syntax, ANTLR4 grammar rules, and project architecture, please refer to the Documentation-TuneScript.pdf included in this repository.
+
+## Academic Context & Credits
+
+This project was developed in collaboration with **[Jakub](https://github.com/Dzejkop02)** as a student project for the **"Formal Languages and Compilers II"** (*Języki formalne i kompilatory II*) course. It was created during the 7th semester of a Bachelor of Science (B.Sc.) degree in Computer Science, specializing in Software Engineering.
 
 ## Project Overview
 
