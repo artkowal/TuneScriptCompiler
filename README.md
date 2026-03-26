@@ -4,7 +4,9 @@
 [![ANTLR4](https://img.shields.io/badge/ANTLR-4-E23B2A.svg?style=for-the-badge)](https://www.antlr.org/)
 [![Gemini Pro 3.1](https://img.shields.io/badge/Built_with-Gemini_Pro_3.1-8E75B2.svg?style=for-the-badge&logo=google&logoColor=white)](https://gemini.google.com/)
 
-This branch (`web-application`) contains the fully interactive Web IDE implementation of the TuneScript compiler. By leveraging **Pyodide (WebAssembly)**, the entire Python compiler engine runs directly inside the browser. Users can write, compile, and listen to their algorithmic music in real-time without installing any local dependencies.
+This repository contains the complete TuneScript project, featuring both a core Command Line Interface (CLI) and a fully interactive Web IDE. By leveraging **Pyodide (WebAssembly)**, the web version runs the entire Python compiler engine directly inside the browser. Users can write, compile, and listen to their algorithmic music in real-time without installing any local dependencies.
+
+🌐 **Live Demo:** [Click here to open TuneScript Studio](https://artkowal.github.io/TuneScriptCompiler/)
 
 📖 **Full Documentation & Grammar**: For a comprehensive overview of the language syntax, ANTLR4 grammar rules, and project architecture, please refer to the [Documentation-TuneScript.pdf](Documentation-TuneScript.pdf) included in this repository.
 
@@ -49,7 +51,6 @@ To run the Web IDE locally on your machine, you do **not** need to install the P
 ```bash
 git clone https://github.com/artkowal/TuneScriptCompiler.git
 cd TuneScriptCompiler
-git checkout web-application
 ```
 
 2. **Start a local HTTP Server:** Due to CORS security policies, the browser needs a server to fetch the internal `.py` files. Run the built-in Python server in the root directory of the project:
@@ -103,3 +104,18 @@ Example command:
 python main.py examples/example.tune
 ```
 Upon successful compilation, the standard output will display the execution logs of the subsequent compilation phases, and the resulting `.mid` file will be saved in the `output/` directory.
+
+## Copyright & Usage
+
+This project was created from scratch as a university degree project. It is provided here for **portfolio and educational purposes**.
+
+✅ **You are free to:**
+* Download, clone, and run the code on your local machine.
+* Read the source code to learn about compiler construction and Pyodide integration.
+
+❌ **You are STRICTLY PROHIBITED from:**
+* Claiming authorship of this code or any of its parts.
+* Submitting this project (or its modified versions) as your own academic coursework, assignment, or degree project.
+* Using the core logic for commercial purposes without explicit, written permission from the authors.
+
+Copyright &copy; 2025 AT, A.K. & J.W. All rights reserved.
