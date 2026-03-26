@@ -210,9 +210,15 @@
         }
         midi-player {
             display: block; width: 100%;
-            --midi-player-background: transparent;
-            --midi-player-text-color: var(--fg-main);
+            --midi-player-text-color: #0f172a;
             --midi-player-progress-color: var(--color-primary);
+        }
+
+        midi-player::part(time) {
+            color: #0f172a;
+            font-family: 'Inter', sans-serif;
+            font-size: 13px;
+            font-weight: 600;
         }
 
         .modal {
