@@ -117,6 +117,18 @@
             transform: translateY(-1px);
         }
 
+        button.danger {
+            background-color: transparent;
+            color: var(--log-error);
+            border: 1px solid rgba(248, 113, 113, 0.3);
+            padding: 6px 12px;
+            font-size: 12px;
+        }
+        button.danger:hover {
+            background-color: rgba(248, 113, 113, 0.1);
+            border-color: rgba(248, 113, 113, 0.8);
+        }
+
         .app-container {
             display: grid;
             flex: 1;
@@ -137,7 +149,7 @@
         }
 
         .panel-header {
-            padding: 15px 20px;
+            padding: 10px 20px;
             border-bottom: 1px solid rgba(255,255,255,0.05);
             display: flex; justify-content: space-between; align-items: center;
         }
@@ -149,6 +161,25 @@
             letter-spacing: 0.1em;
             color: var(--fg-muted);
         }
+
+        .editor-controls {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        select.custom-select {
+            background-color: var(--bg-input);
+            color: var(--fg-main);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 6px;
+            padding: 6px 12px;
+            font-size: 13px;
+            outline: none;
+            cursor: pointer;
+            font-family: 'Inter', sans-serif;
+        }
+        select.custom-select:hover { border-color: var(--color-primary); }
 
         textarea {
             width: 100%;
@@ -228,15 +259,14 @@
             header { padding: 10px 15px; }
             .brand { font-size: 18px; }
             .modal-content { height: 80vh; margin: 10vh auto; }
+            .editor-controls { flex-direction: column; align-items: stretch; }
         }
     </style>
 </head>
 <body>
 
     <header>
-        <div class="brand">
-            TuneScript Studio
-        </div>
+        <div class="brand">TuneScript Studio</div>
         <div class="btn-group">
             <button id="helpBtn" class="secondary">Instrukcja</button>
             <button id="compileBtn" class="primary" disabled>
@@ -250,21 +280,17 @@
         <div class="panel">
             <div class="panel-header">
                 <div class="panel-title">Edytor Kodu</div>
+                <div class="editor-controls">
+                    <select id="exampleSelector" class="custom-select">
+                        <option value="imperial">Marsz Imperialny (Star Wars)</option>
+                        <option value="tetris">Motyw z Tetrisa</option>
+                        <option value="mario">Super Mario Bros</option>
+                        <option value="empty">Moja ścieżka</option>
+                    </select>
+                    <button id="clearBtn" class="danger">🗑️ Wyczyść</button>
+                </div>
             </div>
-            <textarea id="codeEditor" spellcheck="false">
-tempo = 140
-ticks = 480
-time = 4/4
-
-track "BassLine" {
-    instrument = bass
-    play e2 for 1 beat
-    play e2 for 0.5 beat
-    play g2 for 0.5 beat
-    play e2 for 1 beat
-    play d2 for 1 beat
-}
-            </textarea>
+            <textarea id="codeEditor" spellcheck="false"></textarea>
         </div>
 
         <div class="panel">
@@ -305,9 +331,244 @@ Instrukcja
         const playerSection = document.getElementById('playerSection');
         const midiPlayer = document.getElementById('midiPlayer');
         const downloadBtn = document.getElementById('downloadBtn');
+        const exampleSelector = document.getElementById('exampleSelector');
+        const clearBtn = document.getElementById('clearBtn');
+
+        logArea.value = "";
 
         let pyodideInstance = null;
         let currentMidiUrl = null;
+
+const tuneExamples = {
+            imperial: `// Marsz Imperialny - Star Wars Theme
+
+tempo = 105
+ticks = 480
+time = 4/4
+
+track "Melodia" {
+    instrument = trumpet
+
+    // Takt 1
+    play g4 for 1 beat
+    play g4 for 1 beat
+    play g4 for 1 beat
+    play e flat 4 for 0.75 beats
+    play b flat 4 for 0.25 beats
+
+    // Takt 2
+    play g4 for 1 beat
+    play e flat 4 for 0.75 beats
+    play b flat 4 for 0.25 beats
+    play g4 for 2 beats
+
+    // Takt 3
+    play d5 for 1 beat
+    play d5 for 1 beat
+    play d5 for 1 beat
+    play e flat 5 for 0.75 beats
+    play b flat 4 for 0.25 beats
+
+    // Takt 4
+    play f sharp 4 for 1 beat
+    play e flat 4 for 0.75 beats
+    play b flat 4 for 0.25 beats
+    play g4 for 2 beats
+}
+
+track "Smyczki" {
+    instrument = strings
+
+    // Takt 1
+    play <g3 b flat 3 d4> for 1 beat
+    play <g3 b flat 3 d4> for 1 beat
+    play <g3 b flat 3 d4> for 1 beat
+    play <e flat 3 g3 b flat 3> for 0.75 beats
+    play <e flat 3 g3 b flat 3> for 0.25 beats
+
+    // Takt 2
+    play <g3 b flat 3 d4> for 1 beat
+    play <e flat 3 g3 b flat 3> for 0.75 beats
+    play <e flat 3 g3 b flat 3> for 0.25 beats
+    play <g3 b flat 3 d4> for 2 beats
+
+    // Takt 3
+    play <d4 f sharp 4 a4> for 1 beat
+    play <d4 f sharp 4 a4> for 1 beat
+    play <d4 f sharp 4 a4> for 1 beat
+    play <e flat 4 g4 b flat 4> for 0.75 beats
+    play <e flat 4 g4 b flat 4> for 0.25 beats
+
+    // Takt 4
+    play <d4 f sharp 4 a4> for 1 beat
+    play <e flat 3 g3 b flat 3> for 0.75 beats
+    play <e flat 3 g3 b flat 3> for 0.25 beats
+    play <g3 b flat 3 d4> for 2 beats
+}`,
+            tetris: `// Motyw Tetris
+
+tempo = 140
+ticks = 480
+time = 4/4
+
+track "Melodia" {
+    instrument = flute
+
+    play e5 for 1 beat
+    play b4 for 0.5 beats
+    play c5 for 0.5 beats
+    play d5 for 1 beat
+    play c5 for 0.5 beats
+    play b4 for 0.5 beats
+
+    play a4 for 1 beat
+    play a4 for 0.5 beats
+    play c5 for 0.5 beats
+    play e5 for 1 beat
+    play d5 for 0.5 beats
+    play c5 for 0.5 beats
+
+    play b4 for 1.5 beats
+    play c5 for 0.5 beats
+    play d5 for 1 beat
+    play e5 for 1 beat
+
+    play c5 for 1 beat
+    play a4 for 1 beat
+    play a4 for 2 beats
+}
+
+track "Bas" {
+    instrument = bass
+
+    play e3 for 1 beat
+    play e2 for 1 beat
+    play e3 for 1 beat
+    play e2 for 1 beat
+
+    play a3 for 1 beat
+    play a2 for 1 beat
+    play a3 for 1 beat
+    play a2 for 1 beat
+
+    play e3 for 1 beat
+    play e2 for 1 beat
+    play e3 for 1 beat
+    play e2 for 1 beat
+
+    play a3 for 1 beat
+    play a2 for 1 beat
+    play a3 for 1 beat
+    play a2 for 1 beat
+}`,
+            mario: `// Super Mario Bros
+
+tempo = 180
+ticks = 480
+time = 4/4
+
+track "Melodia" {
+    instrument = electric_piano
+
+    play e5 for 0.5 beats
+    play e5 for 0.5 beats
+    rest for 0.5 beats
+    play e5 for 0.5 beats
+    rest for 0.5 beats
+    play c5 for 0.5 beats
+    play e5 for 1 beat
+
+    play g5 for 1 beat
+    rest for 1 beat
+    play g4 for 1 beat
+    rest for 1 beat
+
+    // Główny motyw
+    play c5 for 1.5 beats
+    play g4 for 1.5 beats
+    play e4 for 1 beat
+
+    play a4 for 1 beat
+    play b4 for 1 beat
+    play b flat 4 for 0.5 beats
+    play a4 for 0.5 beats
+    play g4 for 1 beat
+}
+
+track "Bas" {
+    instrument = bass
+
+    play d3 for 0.5 beats
+    play d3 for 0.5 beats
+    rest for 0.5 beats
+    play d3 for 0.5 beats
+    rest for 0.5 beats
+    play d3 for 0.5 beats
+    play d3 for 1 beat
+
+    play g3 for 1 beat
+    rest for 1 beat
+    play g2 for 1 beat
+    rest for 1 beat
+
+    // Bas motyw
+    play e3 for 1.5 beats
+    play c3 for 1.5 beats
+    play c3 for 1 beat
+
+    play f3 for 1 beat
+    play g3 for 1 beat
+    play g flat 3 for 0.5 beats
+    play f3 for 0.5 beats
+    play e3 for 1 beat
+}`,
+            empty: `// Pusty projekt - Stwórz swój własny utwór!
+tempo = 120
+ticks = 480
+time = 4/4
+
+track "MojaSciezka" {
+    instrument = piano
+
+    // Wpisz swoje nuty tutaj:
+    play c4 for 1 beat
+
+}`
+        };
+
+        let userCustomTrack = sessionStorage.getItem('savedCustomTrack') || tuneExamples['empty'];
+
+        if (sessionStorage.getItem('startEmpty') === 'true') {
+            sessionStorage.removeItem('startEmpty');
+            exampleSelector.value = "empty";
+            userCustomTrack = tuneExamples['empty'];
+            sessionStorage.setItem('savedCustomTrack', userCustomTrack);
+            editor.value = tuneExamples['empty'];
+        } else {
+            exampleSelector.value = 'imperial';
+            editor.value = tuneExamples['imperial'];
+        }
+
+        exampleSelector.addEventListener('change', (e) => {
+            if (e.target.value === 'empty') {
+                editor.value = userCustomTrack;
+            } else {
+                editor.value = tuneExamples[e.target.value];
+            }
+            log("Załadowano przykład: " + e.target.options[e.target.selectedIndex].text, "info");
+        });
+
+        editor.addEventListener('input', () => {
+            if (exampleSelector.value === 'empty') {
+                userCustomTrack = editor.value;
+                sessionStorage.setItem('savedCustomTrack', userCustomTrack);
+            }
+        });
+
+        clearBtn.addEventListener('click', () => {
+            sessionStorage.setItem('startEmpty', 'true');
+            window.location.reload();
+        });
 
         function log(message, type="info") {
             const prefix = type === "error" ? "✕ " : (type === "success" ? "✓ " : "→ ");
@@ -371,7 +632,6 @@ def compile_code(code_string):
 
     ast = AstBuilder().visit(tree)
 
-    # POPRAWKA: Przechwytywanie błędów semantycznych
     try:
         context = SemanticAnalyzer().analyze(ast)
     except Exception as e:
@@ -416,7 +676,9 @@ def compile_code(code_string):
                     const path = result.get('path');
                     const midiBytes = pyodideInstance.FS.readFile(path);
                     const blob = new Blob([midiBytes], { type: "audio/midi" });
+
                     if (currentMidiUrl) { URL.revokeObjectURL(currentMidiUrl); }
+
                     currentMidiUrl = URL.createObjectURL(blob);
                     midiPlayer.src = currentMidiUrl;
                     playerSection.style.display = "flex";
